@@ -1,0 +1,42 @@
+global
+    maxconn 4096
+    spread-checks 2
+    user haproxy
+    group haproxy
+    daemon
+defaults
+    mode tcp
+    log 127.0.0.1 local0 notice
+    maxconn 2000
+    option tcplog
+    option dontlognull
+    timeout connect 20s
+    timeout client 10m
+    timeout server 10m
+
+frontend firstfront
+    mode tcp
+    bind 172.16.11.120:80
+    acl hosts_firstback hdr_end(host) -i a1.bmconnect.in
+    use_backend firstback if hosts_firstback
+    default_backend firstback
+backend firstback
+    mode tcp
+    balance roundrobin
+    option redispatch
+    server FIRSTSERVER 172.16.12.125:80
+    option ssl-hello-chk
+
+frontend secondfront 
+    mode tcp
+    bind 172.16.11.120:80
+    acl hosts_secondback hdr_end(host) -i a2.bmconnect.in
+    use_backend secondback if hosts_secondback
+    default_backend secondback
+backend secondback
+    mode tcp
+    balance roundrobin
+    option redispatch
+    server SECONDSERVER 172.16.12.126:80
+    option ssl-hello-chk
+
