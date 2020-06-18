@@ -1,0 +1,58 @@
+global
+    maxconn 2048
+
+defaults
+    mode http
+    timeout connect 5000ms
+    timeout client 90000ms
+    timeout server 90000ms
+
+frontend secure-http-in
+    bind 172.16.11.120:443 ssl crt /etc/haproxy/certs/a1.bmconnect.in.pem crt /etc/haproxy/certs/a2.bmconnect.in.pem
+
+    mode http
+    option http-server-close
+    option forwardfor
+
+    acl is_acme_front hdr(host) -i a1.bmconnect.in
+    acl is_acme_backoffice hdr(host) -i a2.bmconnect.in
+
+    use_backend acme_front if is_acme_front
+    use_backend acme_backoffice if is_acme_backoffice
+
+
+frontend http-in
+    bind 172.16.11.120:80
+
+    redirect scheme https if { hdr(Host) -i a1.bmconnect.in } !{ ssl_fc }
+    redirect scheme https if { hdr(Host) -i a2.bmconnect.in } !{ ssl_fc }
+    
+    acl is_acme_front hdr(host) -i a1.bmconnect.in
+    acl is_acme_backoffice hdr(host) -i a2.bmconnect.in
+
+    use_backend acme_front if is_acme_front
+    use_backend acme_backoffice if is_acme_backoffice
+
+backend acme_front
+    balance roundrobin
+    
+    option httpclose
+    option forwardfor
+
+    http-request set-header X-Forwarded-Port %[dst_port]
+    http-request add-header X-Forwarded-Proto https if { ssl_fc }
+
+    server node1 172.16.11.125:80 check
+   # server node2 172.17.0.1:12090 check
+
+backend acme_backoffice
+    balance roundrobin
+    
+    option httpclose
+    option forwardfor
+
+    http-request set-header X-Forwarded-Port %[dst_port]
+    http-request add-header X-Forwarded-Proto https if { ssl_fc }
+
+    server node1 172.16.12.126:80 check
+  #  server node2 172.17.0.1:13090 check
