@@ -1,0 +1,67 @@
+global
+   log /dev/log local0
+   log /dev/log local1 notice
+   chroot /var/lib/haproxy
+   stats timeout 30s
+   user haproxy
+   group haproxy
+   maxconn 2048
+   tune.ssl.default-dh-param 2048
+   daemon
+
+
+defaults
+        log global
+   mode http
+   option httplog
+   option dontlognull
+   option http-server-close
+   option forwardfor
+   option forwardfor except 127.0.0.0/8
+   option  redispatch
+   timeout connect 5000
+   timeout client 50000
+   timeout server 50000
+
+#frontend http_front
+
+  # stats uri /haproxy?stats
+   #default_backend http_back
+
+frontend https_front
+   bind 172.16.11.120:443 ssl crt /etc/haproxy/certs/batchmaster.co.in.pem
+   bind 172.16.11.120:80
+       http-request redirect prefix https://www.batchmaster.co.in code 301 if !{ ssl_fc }
+   http-request redirect prefix https://www.batchmaster.co.in if !{ ssl_fc }
+   http-request redirect scheme https://www.batchmaster.co.in code 301 if !{ ssl_fc }
+  acl http     ssl_fc,not
+acl host_www hdr_beg(host) www.
+http-request redirect prefix https://www.batchmaster.co.in  code 301 if http or !host_www
+
+  option httpclose
+#  option forwardfor header X-Real-IP
+#  http-request set-header X-Real-IP %[src]
+  option forwardfor
+  reqadd X-Forwarded-Proto:\ https
+  acl letsencrypt-acl path_beg /.well-known/acme-challenge/
+  use_backend letsencrypt-backend if letsencrypt-acl
+  stats uri /nav?test
+   default_backend http_backbackend http_back
+   redirect scheme https://www.batchmaster.co.in if !{ ssl_fc }
+  redirect scheme https://www.batchmaster.co.in code 301 if !{ ssl_fc }
+   balance  roundrobin
+   cookie SERVERID insert indirect nocache
+     server  webserver1 172.16.11.112:80  check cookie s1
+   #  server  webserber2  172.16.11.111:80  check cookie s2
+   # server  barracudaapi 172.16.13.10:80 check cookie s3
+   #  server  w3 172.16.11.161:80  check cookie s4
+   #  server  w4 172.16.11.162:80  check cookie s5
+
+
+backend letsencrypt-backend
+   server letsencrypt 127.0.0.1:54321
+
+
+   
+   
+
