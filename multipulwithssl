@@ -14,8 +14,8 @@ frontend secure-http-in
     option http-server-close
     option forwardfor
 
-    acl is_acme_front hdr(host) -i a1.bmconnect.in
-    acl is_acme_backoffice hdr(host) -i a2.bmconnect.in
+    acl is_acme_front hdr(host) -i web.batchmaster.in
+    acl is_acme_backoffice hdr(host) -i pos.batchmaster.in
 
     use_backend acme_front if is_acme_front
     use_backend acme_backoffice if is_acme_backoffice
@@ -24,11 +24,11 @@ frontend secure-http-in
 frontend http-in
     bind 172.16.11.120:80
 
-    redirect scheme https if { hdr(Host) -i a1.bmconnect.in } !{ ssl_fc }
-    redirect scheme https if { hdr(Host) -i a2.bmconnect.in } !{ ssl_fc }
+    redirect scheme https if { hdr(Host) -i web.batchmaster.in } !{ ssl_fc }
+    redirect scheme https if { hdr(Host) -i pos.batchmaster.in } !{ ssl_fc }
     
-    acl is_acme_front hdr(host) -i a1.bmconnect.in
-    acl is_acme_backoffice hdr(host) -i a2.bmconnect.in
+    acl is_acme_front hdr(host) -i web.batchmaster.in
+    acl is_acme_backoffice hdr(host) -i pos.batchmaster.in
 
     use_backend acme_front if is_acme_front
     use_backend acme_backoffice if is_acme_backoffice
@@ -54,5 +54,5 @@ backend acme_backoffice
     http-request set-header X-Forwarded-Port %[dst_port]
     http-request add-header X-Forwarded-Proto https if { ssl_fc }
 
-    server node1 172.16.12.126:80 check
+    server node1 192.168.200.113:80 check
   #  server node2 172.17.0.1:13090 check
