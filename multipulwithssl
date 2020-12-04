@@ -8,7 +8,7 @@ defaults
     timeout server 90000ms
 
 frontend secure-http-in
-    bind 172.16.11.120:443 ssl crt /etc/haproxy/certs/a1.bmconnect.in.pem crt /etc/haproxy/certs/a2.bmconnect.in.pem
+   bind 192.168.200.100:443 ssl crt /root/web_batchmaster_in.pem crt /etc/haproxy/certs/pos.bmconnect.in.pem
 
     mode http
     option http-server-close
@@ -22,7 +22,7 @@ frontend secure-http-in
 
 
 frontend http-in
-    bind 172.16.11.120:80
+    bind 192.168.200.100:80
 
     redirect scheme https if { hdr(Host) -i web.batchmaster.in } !{ ssl_fc }
     redirect scheme https if { hdr(Host) -i pos.batchmaster.in } !{ ssl_fc }
@@ -42,8 +42,8 @@ backend acme_front
     http-request set-header X-Forwarded-Port %[dst_port]
     http-request add-header X-Forwarded-Proto https if { ssl_fc }
 
-    server node1 172.16.11.125:80 check
-   # server node2 172.17.0.1:12090 check
+   server  bmeweb1 192.168.200.111:80 check cookie   s1
+ #    server  bmeweb2 192.168.200.112:80 check cookie   s2 
 
 backend acme_backoffice
     balance roundrobin
