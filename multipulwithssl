@@ -8,7 +8,7 @@ defaults
     timeout server 90000ms
 
 frontend secure-http-in
-   bind 192.168.200.100:443 ssl crt /root/web_batchmaster_in.pem crt /etc/haproxy/certs/pos.bmconnect.in.pem
+   bind 192.168.200.100:443 ssl crt /root/web_batchmaster_in.pem crt /etc/haproxy/certs/pos.batchmaster.in.pem
 
     mode http
     option http-server-close
