@@ -1,0 +1,56 @@
+global
+   log /dev/log local0
+   log /dev/log local1 notice
+   chroot /var/lib/haproxy
+   stats timeout 30s
+   user haproxy
+   group haproxy
+   maxconn 2048
+   tune.ssl.default-dh-param 2048
+   daemon
+  
+
+defaults
+	log global
+   mode http
+   option httplog
+   option dontlognull
+   option http-server-close
+   option forwardfor except 127.0.0.0/8
+   option  redispatch
+   timeout connect 5000
+   timeout client 50000
+   timeout server 50000
+
+#frontend http_front
+   
+  # stats uri /haproxy?stats
+   #default_backend http_back
+
+frontend https_front
+ #  bind 192.168.200.100:443 ssl crt /etc/ssl/batchmaster/web.batchmaster.in.pem
+   bind 192.168.200.100:443 ssl crt /root/web_batchmaster_in.pem
+   bind 192.168.200.100:80
+   http-request redirect scheme https code 301 if !{ ssl_fc }
+   option httpclose
+   option forwardfor
+  option forwardfor header X-Real-IP
+  http-request set-header X-Real-IP %[src]
+  reqadd X-Forwarded-Proto:\ https
+  acl letsencrypt-acl path_beg /.well-known/acme-challenge/
+  use_backend letsencrypt-backend if letsencrypt-acl
+  stats uri /nav?test
+   default_backend http_back
+   
+backend http_back
+   redirect scheme https if !{ ssl_fc }
+    balance  roundrobin
+   cookie SERVERID insert indirect nocache
+    server  bmeweb1 192.168.200.111:80 check cookie   s1
+ #    server  bmeweb2 192.168.200.112:80 check cookie   s2 
+#     server  bmeweb3 192.168.200.113:80 check cookie   s3 
+   
+
+
+backend letsencrypt-backend
+   server letsencrypt 127.0.0.1:54321
