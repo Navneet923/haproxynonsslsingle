@@ -1,0 +1,50 @@
+userlist mycredentials
+   user admin   insecure-password password
+   user admin1  insecure-password password
+   user mark  insecure-password markspassword
+global
+   log /root/log local0
+   log /root/log local1 notice
+   chroot /var/lib/haproxy
+   stats timeout 30s
+   user haproxy
+   group haproxy
+   maxconn 1000000
+   log 127.9.9.1 local0
+
+defaults
+	log global
+   mode http
+   option httplog
+   option dontlognull
+   timeout connect 5000
+   timeout client 50000
+   timeout server 50000
+
+frontend http_front
+   bind *:80
+  # stats uri /nav?test
+   #default_backend http_back
+   http-request auth unless { http_auth(mycredentials) }
+   acl is-blocked-ip src -f /etc/haproxy/blocklisted.ips
+        http-request deny if is-blocked-ip
+ # http-request redirect scheme https code 301 if !{ ssl_fc }
+ # option httpclose
+ # option forwardfor
+  #reqadd X-Forwarded-Proto:\ https
+##  acl letsencrypt-acl path_beg /.well-known/acme-challenge/
+ ## use_backend letsencrypt-backend if letsencrypt-acl
+  #stats uri /nav?test
+   default_backend http_back
+   
+backend http_back
+ #redirect scheme https if !{ ssl_fc }
+    balance  roundrobin
+   cookie SERVERID insert indirect nocache
+     server  bspldp 172.16.11.9:80  check cookie s1 
+     server  bsplkaitain 172.16.12.125:80  check cookie s2 
+     server  batchmaster 172.16.13.10:80 check cookie s3
+   
+
+backend letsencrypt-backend
+   server letsencrypt 127.0.0.1:54321
