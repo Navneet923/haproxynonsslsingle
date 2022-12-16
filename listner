@@ -1,0 +1,59 @@
+global
+    log                 127.0.0.1 local0
+    chroot              /var/lib/haproxy
+    pidfile             /var/run/haproxy.pid
+    maxconn         4000
+    user                haproxy
+    group               haproxy
+    daemon
+defaults
+    mode                        http
+    log                         global
+    option                      httplog
+    option                      dontlognull
+    option             http-server-close
+    option     forwardfor       except 127.0.0.0/8
+    option                      redispatch
+    retries                     3
+    timeout http-request    10s
+    timeout queue           1m
+    timeout connect         10s
+    timeout client              1m
+    timeout server          1m
+    timeout http-keep-alive     10s
+    timeout check           10s
+# CloudForms Management UI URL
+listen test
+  bind 10.0.22.226:7001
+  mode tcp
+  balance source
+  server cfme1 10.0.20.209:7001 check inter 1s
+  server cfme2 10.0.20.210:7001  check inter 1s
+#
+listen test-7002
+  bind 10.0.22.226:7002
+  mode tcp
+  balance source
+ server cfme1 10.0.20.209:7002 check inter 1s
+  server cfme2 10.0.20.210:7002  check inter 1s
+  
+  listen test-7010
+  bind 10.0.22.226:7010
+  mode tcp
+  balance source
+  server cfme1 10.0.21.99:7010 check inter 1s 
+  server cfme2 10.0.21.98:7010 check inter 1s 
+  
+ listen test-7011
+  bind 10.0.22.226:7011
+  mode tcp
+  balance source
+  server cfme1 10.0.21.106:7011 check inter 1s
+   server cfme2 10.0.21.107:7011 check inter 1s  
+#
+#listen apache-8443
+ # bind 10.19.137.135:8443
+  #mode tcp
+  #balance source
+  #server cfme1 10.19.137.130:8443 check inter 1s
+  #server cfme2 10.19.137.129:8443  check inter 1s
